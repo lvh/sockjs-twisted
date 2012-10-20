@@ -23,9 +23,10 @@
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from twisted.protocols.policies import WrappingFactory
 from twisted.internet.protocol import ClientFactory
+from twisted.protocols.policies import WrappingFactory
 from twisted.web import resource, server
+
 from txsockjs.negotiator import SockJSNegotiator
 from txsockjs.utils import validatePrefix
 
@@ -123,6 +124,7 @@ class SockJSResource(resource.Resource):
             lines.append("{0}: {1}".format(name, ",".join(values)))
         lines += ["", request.content.read()]
 
-        protocol.dataReceived("\r\n".join(lines))
+        data = "\r\n".join(lines)
+        protocol.dataReceived(data)
 
         return server.NOT_DONE_YET

@@ -21,7 +21,9 @@ class CloseFactory(protocol.Factory):
     def buildProtocol(self, addr):
         return Close()
 
-log.startLogging(sys.stdout)
+log.startLogging(sys.stdout, False)
+
+import pudb; pudb.set_trace()
 
 echo = EchoFactory()
 close = CloseFactory()

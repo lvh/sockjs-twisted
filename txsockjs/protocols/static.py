@@ -23,20 +23,25 @@
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import json, random
+import json
+import random
 from twisted.internet.protocol import Protocol
 
+
 class Static(Protocol):
-    def __init__(self,parent):
+    def __init__(self, parent):
         self.parent = parent
+
+
     def makeConnection(self, transport):
         Protocol.makeConnection(self, transport)
         self.send()
+
+
     def validateMethod(self):
-        for method in self.allowedMethods:
-            if self.parent.method == method:
-                return True
-        return False
+        return self.parent.method in self.allowedMethods
+
+
     def send(self):
         if not self.validateMethod():
             h = {
@@ -47,7 +52,9 @@ class Static(Protocol):
             self.transport.loseConnection()
             return False
         return True
-    def sendHeaders(self, headers = {}):
+
+
+    def sendHeaders(self, headers={}):
         if 'Origin' in self.parent.headers and self.parent.headers['Origin'] != 'null':
             origin = self.parent.headers['Origin']
         else:
@@ -74,53 +81,67 @@ class Static(Protocol):
         for k, v in h.iteritems():
             headers += "%s: %s\r\n" % (k, v)
         self.transport.write(headers + "\r\n")
+
+
     def sendBody(self, body):
         self.transport.write(body)
         self.transport.loseConnection()
-        
+
+
+
 class Greeting(Static):
     allowedMethods = ['GET']
+
     def send(self):
         if not Static.send(self):
             return
-        h = {
-            'content-type': 'text/plain; charset=UTF-8',
-        }
-        self.sendHeaders(h)
+
+        self.sendHeaders({'content-type': 'text/plain; charset=UTF-8'})
         self.sendBody("Welcome to SockJS!\n")
 
+
+
 class Info(Static):
-    allowedMethods = ['OPTIONS','GET']
+    allowedMethods = ['OPTIONS', 'GET']
+
     def send(self):
         if not Static.send(self):
             return
+
         h = {
             'content-type': 'application/json; charset=UTF-8',
             'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         }
         self.sendHeaders(h)
+
         if self.parent.method == "OPTIONS":
             self.transport.loseConnection()
             return
+
         b = {
             'websocket': self.parent.factory.options['websocket'],
             'cookie_needed': self.parent.factory.options['cookie_needed'],
             'origins': ['*:*'],
-            'entropy': random.randint(0,2**32-1)
+            'entropy': random.randrange(2 ** 32)
         }
         self.sendBody(json.dumps(b))
+
+
 
 class IFrame(Static):
     allowedMethods = ['GET']
     etag = '00000000-0000-0000-0000-000000000000'
+
     def send(self):
         if not Static.send(self):
             return
+
         if 'If-None-Match' in self.parent.headers and self.parent.headers['If-None-Match'].find(self.etag) >= 0: #Could result in false positives
             h = {'status': '304 Not Modified'}
             self.sendHeaders(h)
             self.transport.loseConnection()
             return
+
         h = {
             'Cache-Control': 'public, max-age=31536000',
             'Expires': 'January 1st, 3000',
@@ -128,7 +149,11 @@ class IFrame(Static):
             'content-type': 'text/html; charset=UTF-8',
         }
         self.sendHeaders(h)
-        self.sendBody('''
+        self.sendBody(_IFRAME_BODY)
+
+
+
+_IFRAME_BODY = '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -145,12 +170,11 @@ class IFrame(Static):
   <p>This is a SockJS hidden iframe. It's used for cross domain magic.</p>
 </body>
 </html>
-        ''')
+'''
+
+
 
 class Error404(Static):
     def send(self):
-        h = {
-            'status': '404 Not Found',
-        }
-        self.sendHeaders(h)
+        self.sendHeaders({'status': '404 Not Found'})
         self.transport.loseConnection()
