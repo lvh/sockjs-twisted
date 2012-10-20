@@ -24,7 +24,7 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from zope.interface import directlyProvides, providedBy
-from twisted.internet import reactor
+from twisted.internet import reactor, task
 from twisted.internet.protocol import Protocol
 from twisted.protocols.policies import ProtocolWrapper
 import json, Cookie, urllib
@@ -38,7 +38,7 @@ def normalize(s, encoding):
             return unicode(s).encode('utf-8', 'backslashreplace')
     elif isinstance(s, unicode):
         return s.encode('utf-8', 'backslashreplace')
-    else:
+    else:  # s is a str
         if s.decode('utf-8', 'ignore').encode('utf-8', 'ignore') == s: # Ensure s is a valid UTF-8 string
             return s
         else: # Otherwise assume it is Windows 1252
@@ -213,13 +213,15 @@ class RelayProtocol(ProtocolWrapper):
 
         self.factory.registerProtocol(self)
         self.wrappedProtocol.makeConnection(self)
-        reactor.callLater(self.factory.options['heartbeat'], self.heartbeat)
+
+        self.heartbeatLoop = task.LoopingCall(self.heartbeat)
+        self.heartbeatLoop.start(self.factory.options['heartbeat'])
+
         self.timeout = reactor.callLater(self.factory.options['timeout'], self.disconnect)
 
 
     def heartbeat(self):
         self.pending.append('h')
-        reactor.callLater(self.factory.options['heartbeat'], self.heartbeat)
 
 
     def makeConnection(self, transport):
@@ -246,6 +248,7 @@ class RelayProtocol(ProtocolWrapper):
     def connectionLost(self, reason):
         self.transport = None
         self.attached = False
+        self.heartbeatLoop.stop()
         self.timeout = reactor.callLater(self.factory.options['timeout'], self.disconnect)
 
 
