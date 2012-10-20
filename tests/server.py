@@ -1,5 +1,7 @@
+import sys
 from twisted.internet import reactor, protocol
 from twisted.web import server, resource
+from twisted.python import log
 from txsockjs.factory import SockJSMultiFactory, SockJSResource
 
 class Echo(protocol.Protocol):
@@ -18,6 +20,8 @@ class Close(protocol.Protocol):
 class CloseFactory(protocol.Factory):
     def buildProtocol(self, addr):
         return Close()
+
+log.startLogging(sys.stdout)
 
 echo = EchoFactory()
 close = CloseFactory()
