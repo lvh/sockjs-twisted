@@ -28,7 +28,10 @@ from twisted.internet.protocol import Protocol
 from twisted.protocols.policies import ProtocolWrapper
 from txsockjs import utils
 
+
 REQUEST, NEGOTIATING, ROUTED = range(3)
+
+
 
 class SockJSNegotiator(ProtocolWrapper):
     buf = ""
@@ -42,17 +45,23 @@ class SockJSNegotiator(ProtocolWrapper):
     factory = None
     wrappedProtocol = None
     addr = None
-    
+
     def __init__(self, factory, addr):
-        ProtocolWrapper.__init__(self,factory,None)
+        ProtocolWrapper.__init__(self, factory, None)
         self.addr = addr
+
+
     def makeConnection(self, transport):
         directlyProvides(self, providedBy(transport))
         Protocol.makeConnection(self, transport)
+
+
     def dataReceived(self, data):
         if self.state == ROUTED:
             return self.wrappedProtocol.dataReceived(data)
+
         self.buf += data
+
         oldstate = None
         while oldstate != self.state:
             oldstate = self.state
@@ -73,14 +82,20 @@ class SockJSNegotiator(ProtocolWrapper):
             elif self.state == ROUTED:
                 self.wrappedProtocol.dataReceived(self.buf)
                 self.buf = ""
+
+
     def connectionLost(self, reason):
         if self.wrappedProtocol:
             self.wrappedProtocol.connectionLost(reason)
+
+
     def negotiate(self):
-        prefix, self.session, method, self.query = utils.parsePath(self.location,self.factory.routes.keys())
+        prefix, self.session, method, self.query = utils.parsePath(self.location, self.factory.routes.keys())
         self.factory = self.factory.resolvePrefix(prefix)
         if self.factory is None:
             method = utils.methods['ERROR404']
+
         self.wrappedProtocol = method(self)
         self.wrappedProtocol.makeConnection(self)
+
         self.state = ROUTED
