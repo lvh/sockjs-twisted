@@ -25,19 +25,25 @@
 
 from txsockjs.protocols.base import SessionProtocol
 
+
 class EventSource(SessionProtocol):
-    allowedMethods = ['OPTIONS','GET']
+    allowedMethods = ['OPTIONS', 'GET']
     contentType = 'text/event-stream; charset=UTF-8'
     sent = 0
+
     def prepConnection(self):
         self.sendHeaders()
         SessionProtocol.write(self, "\r\n")
+
+
     def write(self, data):
         packet = "data: %s\r\n\r\n" % data
         self.sent += len(packet)
         SessionProtocol.write(self, packet)
         if self.sent > self.factory.options['streaming_limit']:
             self.loseConnection()
+
+
     def writeSequence(self, data):
         for d in data:
             self.write(d)

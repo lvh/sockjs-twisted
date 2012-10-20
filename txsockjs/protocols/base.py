@@ -53,6 +53,7 @@ class SessionProtocol(ProtocolWrapper):
     writeOnly = False
     chunked = True
     disconnecting = True
+
     def __init__(self, parent):
         self.method = parent.method
         self.headers = parent.headers
@@ -106,8 +107,8 @@ class SessionProtocol(ProtocolWrapper):
     def connectionLost(self, reason):
         if not self.writeOnly and self.wrappedProtocol:
             self.wrappedProtocol.connectionLost(reason)
-        if not self.writeOnly and not self.disconnecting and self.wrappedProtocol:
-            self.wrappedProtocol.disconnect()
+            if not self.disconnecting:
+                self.wrappedProtocol.disconnect()
 
 
     def prepConnection(self):

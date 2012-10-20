@@ -29,51 +29,72 @@ from twisted.web import resource, server
 from txsockjs.negotiator import SockJSNegotiator
 from txsockjs.utils import validatePrefix
 
+
 class SockJSFactory(WrappingFactory):
     options = None
     sessions = None
     routes = None
     protocol = SockJSNegotiator
-    def __init__(self, factory, options = None):
+
+    def __init__(self, factory, options=None):
         self.options = {
             'websocket': True,
             'cookie_needed': False,
             'heartbeat': 25,
             'timeout': 5,
             'streaming_limit': 128 * 1024,
-            'encoding': 'cp1252' #Latin1
+            'encoding': 'cp1252'  # Latin1
         }
-        self.sessions = {}
-        self.routes = {'':self}
-        self.wrappedFactory = factory
-
         if options is not None:
             self.options.update(options)
+
+        self.sessions = {}
+        self.routes = {'': self}
+        self.wrappedFactory = factory
+
+
     def buildProtocol(self, addr):
         return self.protocol(self, addr)
+
+
     def registerProtocol(self, p):
         self.sessions[p.session] = p
+
+
     def unregisterProtocol(self, p):
         if p.session in self.sessions:
             del self.sessions[p.session]
+
+
     def resolvePrefix(self, prefix):
         return self
+
+
 
 class SockJSMultiFactory(ClientFactory):
     routes = None
     protocol = SockJSNegotiator
+
     def __init__(self):
         self.routes = {}
+
+
     def doStop(self):
         for factory in self.routes.itervalues():
             factory.doStop()
         ClientFactory.doStop(self)
+
+
     def buildProtocol(self, addr):
         return self.protocol(self, addr)
-    def addFactory(self, factory, prefix, options = None):
+
+
+    def addFactory(self, factory, prefix, options=None):
         if not validatePrefix(prefix):
             raise ValueError()
         self.routes[prefix] = SockJSFactory(factory, options)
+
+
     def resolvePrefix(self, prefix):
         if prefix in self.routes:
             return self.routes[prefix]
@@ -87,7 +108,7 @@ class SockJSResource(resource.Resource):
     """
     isLeaf = True
 
-    def __init__(self, factory, options = None):
+    def __init__(self, factory, options=None):
         self._factory = SockJSFactory(factory, options)
 
 
