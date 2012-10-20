@@ -39,9 +39,10 @@ def normalize(s, encoding):
     elif isinstance(s, unicode):
         return s.encode('utf-8', 'backslashreplace')
     else:  # s is a str
-        if s.decode('utf-8', 'ignore').encode('utf-8', 'ignore') == s: # Ensure s is a valid UTF-8 string
+        try:
+            s.decode("utf-8")
             return s
-        else: # Otherwise assume it is Windows 1252
+        except UnicodeDecodeError:
             return s.decode(encoding, 'replace').encode('utf-8', 'backslashreplace')
 
 
