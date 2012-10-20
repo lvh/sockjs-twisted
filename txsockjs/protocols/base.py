@@ -217,7 +217,8 @@ class RelayProtocol(ProtocolWrapper):
         self.wrappedProtocol.makeConnection(self)
 
         self.heartbeatLoop = task.LoopingCall(self.heartbeat)
-        self.heartbeatLoop.start(self.factory.options['heartbeat'])
+        heartbeat = self.factory.options['heartbeat']
+        self.heartbeatLoop.start(heartbeat, False)
 
         self.timeout = reactor.callLater(self.factory.options['timeout'], self.disconnect)
 
@@ -250,7 +251,6 @@ class RelayProtocol(ProtocolWrapper):
     def connectionLost(self, reason):
         self.transport = None
         self.attached = False
-        self.heartbeatLoop.stop()
         self.timeout = reactor.callLater(self.factory.options['timeout'], self.disconnect)
 
 
