@@ -46,7 +46,7 @@ class SockJSFactory(WrappingFactory):
         self.sessions = {}
         self.routes = {'':self}
         self.wrappedFactory = factory
-        
+
         if options is not None:
             self.options.update(options)
     def buildProtocol(self, addr):
